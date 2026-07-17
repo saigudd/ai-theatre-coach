@@ -1,0 +1,6 @@
+- theatre stage aesthetic
+- curtain opening animation
+- rehearsal room theme
+- character cards
+- progress visualization
+- microphone animation (future voice mode)
