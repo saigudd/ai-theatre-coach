@@ -1,7 +1,6 @@
 # AI Theatre Coach Development Log
 
 ## July 16, 2026
-
 ### Milestones Completed
 
 - Created Python project structure.
@@ -20,7 +19,6 @@
 ### Streamlit Progress
 
 Learned how Streamlit works.
-
 Built first UI:
 - Added application title.
 - Added text input.
@@ -32,7 +30,6 @@ Current prototype:
 - Button displays the entered line.
 
 ### OpenAI Integration
-
 Built first standalone OpenAI API test.
 
 Learned:
@@ -47,14 +44,12 @@ Successfully:
 - Received an AI-generated response.
 
 ### Challenges Encountered
-
 - Initially forgot to save files before running.
 - Accidentally entered the Python interpreter instead of the terminal.
 - Accidentally committed .env and learned how to remove it from Git tracking.
 - Learned the difference between Git tracking and .gitignore.
 
 ### Next Steps
-
 - Connect OpenAI responses to Streamlit.
 - Replace echo response with AI response.
 - Begin building actual rehearsal workflow.
@@ -62,7 +57,6 @@ Successfully:
 ----------------------------------------------------------------------------------------------------------------------------------------
 
 ## July 20, 2026
-
 ### Connected Streamlit with OpenAI
 
 Milestone:
@@ -90,3 +84,61 @@ client.responses.create()
 Result:
 AI Line Partner successfully generates acting responses.
 
+----------------------------------------------------------------------------------------------------------------------------------------
+
+## July 22, 2026
+# Added Context-Aware Rehearsal Prompting
+
+## Changes Made
+Added new user inputs:
+- Character name
+- Scene context
+- Actor's line
+
+Updated the AI prompt to include:
+- Character identity
+- Scene information
+- Actor dialogue
+- Response constraints
+
+The AI is now instructed to:
+- Stay in character
+- Respond only with dialogue
+- Avoid stage directions
+- Keep responses short and conversational
+- Continue the scene naturally
+
+## Testing
+Tested with multiple scenarios:
+
+### Odyssey Scene
+Before:
+- AI produced long dramatic monologues.
+- Responses felt more like a narrator.
+
+After:
+- AI responded as the character.
+- Dialogue became shorter and more suitable for rehearsal.
+
+### Tony Stark / Spider-Man Scene
+Tested character-based responses with emotional context.
+
+Learned:
+- Providing context significantly improves AI behavior.
+- Character relationships and emotional stakes are important for acting responses.
+
+## Engineering Concepts Learned
+### Prompt Engineering
+Learned that LLM outputs depend heavily on instructions and context.
+
+## Current Limitation
+The AI can only respond to one exchange.
+
+A real rehearsal requires:
+- conversation history
+- memory
+- maintaining scene state
+
+Future improvement: Add conversation memory so the actor and AI can continue rehearsing.
+
+----------------------------------------------------------------------------------------------------------------------------------------
