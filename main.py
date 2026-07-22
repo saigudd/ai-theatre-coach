@@ -14,13 +14,25 @@ def ask_ai(prompt):
 
 st.title("AI Line Partner")
 
+character = st.text_input("Enter your character: ")
+context = st.text_area("Enter the context of the scene(up to 3-5 sentences): ")
 line = st.text_input("Enter your line: ")
 
 if st.button("Rehearse"):
-  answer = ask_ai(f"""You are an acting partner.
-    The user is rehearsing a scene. 
-    Respond naturally as the other character. 
-    Actor line: {line})""")
+  answer = ask_ai(f"""You are an actor portraying {character}.
+  Scene context:
+  {context}
+
+  The actor says:
+  {line}
+
+  Your job:
+  - Stay in character.
+  - Respond only with dialogue.
+  - Do not include stage directions.
+  - Do not explain your thoughts.
+  - Keep your response brief (1-3 sentences).
+  - Continue the scene naturally.""")
   st.write(answer)
 
   
