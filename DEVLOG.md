@@ -142,3 +142,20 @@ A real rehearsal requires:
 Future improvement: Add conversation memory so the actor and AI can continue rehearsing.
 
 ----------------------------------------------------------------------------------------------------------------------------------------
+## July 25, 2026
+### Learned Streamlit Session State
+
+#### Changes
+- Built a small Session State experiment.
+- Stored a rehearsal counter across reruns.
+- Stored a list that persisted between button clicks.
+
+#### Learned
+- Streamlit reruns the entire script whenever the user interacts with the app.
+- Normal Python variables are recreated every rerun.
+- `st.session_state` preserves data across reruns for a user's session.
+- Session State can store different data types such as integers and lists.
+
+#### Next Step
+Use Session State to maintain conversation history in the AI Theatre Coach.
+----------------------------------------------------------------------------------------------------------------------------------------
