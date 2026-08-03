@@ -1,0 +1,38 @@
+# AI Theatre Coach
+
+An AI-powered rehearsal partner built with Python, Streamlit, and the OpenAI API that helps actors rehearse scenes, stay in character, and better understand their roles.
+
+## Current Features
+
+- AI-powered scene partner
+- Character-aware dialogue
+- Scene context prompting
+- Prompt engineering for in-character responses
+- Streamlit web interface
+- OpenAI API integration
+- Git version control
+
+## Tech Stack
+
+- Python
+- Streamlit
+- OpenAI API
+- python-dotenv
+- Git & GitHub
+
+## Roadmap
+
+- [ ] Persistent conversation memory
+- [ ] Script upload and parsing
+- [ ] Memorization mode
+- [ ] Character exploration mode
+- [ ] Acting coach feedback
+- [ ] Improv mode
+- [ ] Voice conversations
+- [ ] Streaming AI responses
+- [ ] Theatre-inspired UI
+- [ ] Deploy online
+
+## Why I Built This
+
+This project is helping me learn practical AI engineering by building a real application from the ground up. Along the way, I'm gaining experience with prompt engineering, application state management, API integration, software architecture, and iterative development.
