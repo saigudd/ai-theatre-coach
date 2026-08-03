@@ -1,0 +1,23 @@
+from openai import OpenAI, OpenAIError
+from config import settings
+
+client = OpenAI()
+
+class AIClientError(Exception):
+  "raised when AI client fails to return a response"
+
+def get_ai_response(messages: list[dict]) -> str:
+  try:
+    response = client.responses.create(
+      model=settings.MODEL,
+      input=messages
+    )
+  except OpenAIError as e:
+    raise AIClientError(f"AI request failed: {e}") from e
+
+  if not response.output_text:
+    raise AIClientError("AI returned an empty response.")
+
+  return response.output_text
+
+
