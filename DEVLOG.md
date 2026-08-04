@@ -158,4 +158,44 @@ Future improvement: Add conversation memory so the actor and AI can continue reh
 
 #### Next Step
 Use Session State to maintain conversation history in the AI Theatre Coach.
+
+----------------------------------------------------------------------------------------------------------------------------------------
+## August 3, 2026
+### Added Multi-Turn Conversation Memory
+
+#### Changes
+- Refactored the project into multiple modules.
+- Renamed the main.py to `app.py`.
+- Moved prompt generation into a dedicated prompts module.
+- Moved OpenAI communication into an AI client module.
+- Added a ConversationManager class to store conversation history.
+- Limited conversation history to a configurable number of turns.
+- Added a Clear Scene button to reset the rehearsal.
+
+#### Learned
+
+- Separating UI from business logic makes projects easier to maintain.
+- Conversation history must be sent back to the LLM on every request for true multi-turn conversations.
+- Session State can store custom Python objects, not just primitive values.
+- Organizing code into smaller modules makes future features easier to implement.
+
+#### Testing
+
+Tested several multi-turn conversations.
+
+Observed that:
+- The AI remembered previous dialogue.
+- Characters stayed consistent throughout the rehearsal.
+- Context remained stable across multiple exchanges.
+
+Successfully tested:
+- Odyssey rehearsal
+- Tony Stark / Spider-Man scene
+
+#### Current Limitation
+The AI still relies on manually entered scene information.
+
+Future improvement:
+- Upload scripts and automatically extract characters, dialogue, and scene context.
+
 ----------------------------------------------------------------------------------------------------------------------------------------
