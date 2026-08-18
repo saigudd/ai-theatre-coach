@@ -13,5 +13,6 @@ class ConversationManager:
     self.turns.append({"role": "assistant", "content": line})
 
   def to_messages(self) -> list[dict]:
+    if self.max_turns == 0: return {"role": "system", "content": self.system_prompt}
     history = self.turns[-(self.max_turns * 2): ]
     return [{"role": "system", "content": self.system_prompt}] + history
