@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from collections import Counter
+import re
 
 @dataclass
 class ScriptLine:
@@ -7,6 +8,8 @@ class ScriptLine:
   dialogue: str
   stage_direction: str | None = None
 
+
+#main func
 def parse_script(raw_test: str) -> list[ScriptLine]:
   """v1: replace with LLM parsing later if real scripts dont fit the format"""
 
@@ -21,9 +24,9 @@ def parse_script(raw_test: str) -> list[ScriptLine]:
     if current_character is not None and len(dialogue_buffer) >= 1:
       
       
-      fdialogue = " ".join(dialogue_buffer)
-      rdialogue = ScriptLine(character=current_character, dialogue=fdialogue)
-      result.append(rdialogue)
+      fulldialogue = " ".join(dialogue_buffer)
+      realdialogue = ScriptLine(character=current_character, dialogue=fulldialogue)
+      result.append(realdialogue)
 
       #resets for next character/dialogue
       current_character = None
@@ -35,7 +38,7 @@ def parse_script(raw_test: str) -> list[ScriptLine]:
 
     if is_character_line(line):
       flush()
-      current_character = line
+      current_character = normalize_character_name(line)
       continue
 
     if line.startswith("(") and line.endswith(")"):
@@ -52,6 +55,7 @@ def parse_script(raw_test: str) -> list[ScriptLine]:
   return result
 
 
+#checks to see if 
 def is_character_line(line: str) -> bool:
   stripped = line.strip()
 
@@ -92,11 +96,22 @@ def is_character_line(line: str) -> bool:
 
 def main_character(lines: list[ScriptLine], min_lines: int = 3) -> list[str]:
   """filters out junk(headings, sound effects,
-  by keeping names that speak at least 'min_lines' times"""\
+  by keeping names that speak at least 'min_lines' times"""
 
   count = Counter(line.character for line in lines)
 
-  frequent_characters = [name for name, count in count.items() if count >= min_lines]
+  frequent_characters = [name for name, freq in count.items() if freq >= min_lines]
 
   return sorted(frequent_characters)
-  pass
+  
+
+#"normalizes" the name of the character 
+def normalize_character_name(raw_name: str) -> str:
+  name = raw_name.strip()
+
+  name = re.sub(r"\s*\([^)]*\)\s*$", "", name)
+  name = name.split(" - ")[0].strip()
+
+  return name
+
+  

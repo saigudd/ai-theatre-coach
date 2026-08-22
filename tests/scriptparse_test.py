@@ -1,4 +1,4 @@
-from core.script_parser import ScriptLine, parse_script
+from core.script_parser import ScriptLine, parse_script, main_character
 
 def test_parser_basic_scene():
   text = "ROMEO\nBut soft, what light through yonder window breaks?\n\nJULIET\nO Romeo, wherefore art thou Romeo?\n"
@@ -51,10 +51,13 @@ def test_parses_standard_screenplay_cue_format():
 
 
 def test_main_characters_filters_by_frequency():
+    
     lines = [
         ScriptLine(character="BRUCE", dialogue="a"),
         ScriptLine(character="BRUCE", dialogue="b"),
         ScriptLine(character="BRUCE", dialogue="c"),
         ScriptLine(character="RANDOM JUNK", dialogue="x"),
     ]
-    assert main_characters(lines, min_lines=3) == ["BRUCE"]
+    assert main_character(lines, min_lines=3) == ["BRUCE"]
+
+
