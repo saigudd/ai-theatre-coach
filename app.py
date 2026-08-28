@@ -14,6 +14,7 @@ if "current_line_idx" not in st.session_state:
 
 def clear_scene():
   st.session_state.conversation.turns = []
+  st.session_state.conversation.system_prompt = ""
   st.session_state.current_line_idx = 0 
 
 #ui-elements
@@ -27,9 +28,12 @@ unique_characters = []
 
 if uploaded_file is not None:
   raw_text = uploaded_file.read().decode("utf-8")
-
   parsed_lines = parse_script(raw_text)
   unique_characters = main_character(parsed_lines, min_lines=3)
+
+  if not unique_characters:
+    st.warning("No characters detected. This parser expects standard screenplay formatting (ALL CAPS name on its own line.")
+
 else:
   parsed_lines = []
   unique_characters = []
@@ -47,9 +51,6 @@ if st.button("Load Script ", disabled=load_disabled):
   st.session_state.current_line_idx = 0 #reset pointer to start of script
 
   idx = 0
-  scene_window = parsed_lines[idx : idx + 10] #next 10 lines of context
-  st.session_state.conversation.system_prompt = build_scene_prompt(user_character, scene_window)
-  
   st.success("Script loaded! Ready to rehearse")
 
 st.divider()
@@ -59,43 +60,62 @@ idx = st.session_state.current_line_idx
 
 #check to make sure we didn't reach the end
 if parsed_lines and idx < len(parsed_lines):
+
   upcoming = parsed_lines[idx]
   if upcoming.character == user_character:
     if st.button("Show my line"):
       st.caption(f"Your line : {upcoming.dialogue}")
-    else:
-      st.caption(f"Scene continues. {upcoming.character} speaks next.")
-      
-next_line = st.text_input("Enter your next line:", key="next_line_input")
+  else:
+    st.caption(f"Scene continues. {upcoming.character} speaks next.")
 
+##showcasing the rehearsal
 
-rehearse_disabled = uploaded_file is None or not user_character or not next_line.strip()
-if st.button("Rehearse", disabled=rehearse_disabled):
-  convo = st.session_state.conversation
+with st.form(key="rehearse_form", clear_on_submit=True):
+  next_line = st.text_input("Enter your next line:")
+  submitted = st.form_submit_button(
+    "Rehearse", disabled=(uploaded_file is None or not user_character)
+  )   
 
- # Check to make sure we didn't reach the end
-  if parsed_lines and idx < len(parsed_lines):
-    # log user turn
-    convo.add_actor_line(next_line)
-    st.session_state.current_line_idx += 1 
- 
-    #log AI turn
-    next_idx = st.session_state.current_line_idx
-    if next_idx < len(parsed_lines):
-      partner_line = parsed_lines[next_idx]
-
-      if partner_line.character != user_character:
-        try:
-          answer = get_ai_response(convo.to_messages())
-        except AIClientError as e:
-          st.error(f"Error talking to AI: {e}")
-        else:
-          convo.add_ai_line(answer)
-          st.session_state.current_line_idx += 1
-          st.rerun() #instant refresh and show next cue
-  else: 
+if submitted:
+  if not next_line.strip():
+    st.warning("Type a line first.")
+  elif idx >= len(parsed_lines):
     st.info("You've reached the end of the script!")
+  else: 
+    convo = st.session_state.conversation
 
+
+    convo.add_actor_line(user_character, next_line)
+    st.session_state.current_line_idx += 1
+
+    next_idx = st.session_state.current_line_idx
+    ai_should_respond = (
+      next_idx < len(parsed_lines)
+      and parsed_lines[next_idx].character != user_character
+    )
+
+    if ai_should_respond:
+      try:
+        with st.spinner("Partner is thinking..."):
+
+          upcoming_character = parsed_lines[next_idx].character 
+          scene_window = parsed_lines[idx : idx + 10] #ai constantly gets context, hence be able to switch character if needed
+
+          convo.system_prompt = build_scene_prompt(
+            user_character=user_character,
+            ai_character=upcoming_character,
+            upcoming_lines=scene_window
+          )
+
+          answer = get_ai_response(convo.to_messages())
+      except AIClientError as e:
+        st.error(f"Error talking to AI: {e}")
+      else:
+        convo.add_ai_line(upcoming_character, answer)
+        st.session_state.current_line_idx += 1
+        st.rerun()
+    else:
+      st.rerun() #runs twice so it stops this execution and start a fresh script from the top.
 
 
 ## will implement this for improv mode 
@@ -111,7 +131,8 @@ st.button("Clear Scene", on_click=clear_scene)
 #responses space
 st.divider()
 for turn in st.session_state.conversation.turns:
-  speaker = "You" if turn["role"] == "user" else "Partner"
+  #shows the user_character instead of "YOU"
+  speaker = turn.get('character', 'You' if turn["role"] == "user" else "Partner")
   st.write(f"**{speaker}**: {turn['content']}")
 
 

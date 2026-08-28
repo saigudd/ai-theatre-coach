@@ -199,3 +199,10 @@ Future improvement:
 - Upload scripts and automatically extract characters, dialogue, and scene context.
 
 ----------------------------------------------------------------------------------------------------------------------------------------
+
+
+### Current limitation
+Screenplay parsing uses heuristics, not a grammar; rare false positives can slip through
+
+Future improvement:
+- cheap v2 where it would send only the short filtered candidate list to the LLM ("which of these are character names?"); tiny, cheap call
