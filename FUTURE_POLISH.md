@@ -90,17 +90,17 @@
    - problem: prompts become difficult to maintain as features increase
    - solution: move prompts into separate files/functions
    - future: test and optimize prompts
-   - status: IN PROGRESS
+   - status: DONE
 - ###API Reliability
    - problem: API failures crash the application
    - solution: handle errors 
    - future: retry logic, user-friendly messages
-   - status: IN PROGRESS
+   - status: DONE
 - ###Token Optimization
    - problem: long conversations increase API costs
    - solution: limit history and summarize older conversations
    - future: automatic memory compression
-   - status: FUTURE
+   - status: DONE!
 - ###Script Grounding
    - problem: AI relies on manually entered context instead of the actual script
    - solution: upload and parse scripts into structured scene information
@@ -117,3 +117,62 @@
    - future: actor dashboard and saved projects
    - status: FUTURE
 
+-----------------------------------------------------------------------------------------------------------------
+Engineering Improvements — TODO
+
+- [ ] Build robust screenplay parser
+      - ignore scene headings
+      - ignore action lines
+      - ignore parentheticals
+      - normalize character names
+      - support multiline dialogue
+      - handle common screenplay formatting variations
+
+- [ ] Add strict script rehearsal mode
+      - AI follows actual script dialogue
+      - prevent unnecessary improvisation
+      - preserve exact dialogue when appropriate
+
+- [ ] Add natural scene rehearsal mode
+      - allow controlled improvisation
+      - maintain character identity
+      - respond naturally while remaining grounded in script
+
+- [ ] Add parser test suite
+      - standard screenplay
+      - parentheticals
+      - multiline dialogue
+      - scene transitions
+      - malformed input
+
+- [ ] Improve script state management
+      - current scene
+      - current line
+      - current speaker
+      - scene transitions
+
+- [ ] Improve context management
+      - recent conversation history
+      - persistent scene context
+      - relevant upcoming script lines
+      - summarize older context when necessary
+
+- [ ] Add duplicate-submission protection
+
+- [ ] Add loading/progress states
+
+- [ ] Add structured error handling
+      - API errors
+      - invalid files
+      - unsupported formats
+      - parsing failures
+
+- [ ] Add token usage / latency tracking
+
+- [ ] Add response caching where appropriate
+
+- [ ] Add automated tests
+
+- [ ] Add deployment configuration
+
+- [ ] Add observability/debug logging

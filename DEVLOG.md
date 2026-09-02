@@ -199,10 +199,84 @@ Future improvement:
 - Upload scripts and automatically extract characters, dialogue, and scene context.
 
 ----------------------------------------------------------------------------------------------------------------------------------------
+## August 28, 2026
+### Script-Based Rehearsal Workflow
+
+### Changes Made
+Expanded the application from a basic AI conversation tool into a script-based rehearsal workflow.
+
+Added:
+
+* Script file upload through Streamlit.
+* Script parsing into structured `ScriptLine` objects.
+* Automatic character extraction.
+* Character selection for the actor.
+* Script position tracking using `current_line_idx`.
+* "Show my line" functionality.
+* Script progression between actor and scene partner.
+* Dynamic identification of the character who should respond next.
+* Scene context passed to the AI using upcoming script lines.
+* Character-aware AI responses.
+* Clear Scene functionality that resets the rehearsal state.
+* Improved conversation display showing the actual character names.
+* Form-based rehearsal input with automatic input clearing after submission.
+* Loading state while the AI generates a response.
+
+#### Learned 
+
+# 1: Structured Data
+Learned how screenplay text can be transformed into structured Python objects instead of being treated as one large string.
+A script line is represented using: `ScriptLine(character, dialogue)`
+This allows the application to reason about who is speaking and what they are saying.
+
+# 2: State Management
+Added `current_line_idx` to track the application's position within the parsed script.
+The application can now determine:
+* which line is currently being rehearsed
+* whether the actor or another character speaks next
+* when the rehearsal reaches the end of the script
+
+# 3: Context Management
+Instead of relying only on conversation history, the application now provides the AI with a window of upcoming script lines.
+This allows the AI to understand upcoming dialogue, character changes, and scene context.
+
+# 4: Streamlit Forms
+Learned how `st.form()` and `st.form_submit_button()` can group user input and submit it as one interaction.
+Using `clear_on_submit=True` allows the rehearsal input field to reset after submission.
+
+# 5: Reruns
+Continued learning how Streamlit reruns the application from top to bottom after user interaction.
+Used `st.rerun()` intentionally after updating rehearsal state so the UI immediately reflects the new script position and conversation.
+
+##### Challenges Encountered
+The first version of the screenplay parser produced incorrect characters when processing a real screenplay because files contain more than dialogue.
+
+Examples include:
+* scene headings
+* action descriptions
+* parentheticals
+* formatting artifacts
+* multiline dialogue
+
+A real screenplay also contains character changes within the same scene, requiring the application to dynamically identify the next speaking character.
+The AI initially improvised too much instead of following the original script closely.
+This revealed that rehearsal should eventually support different modes, like strict script rehearsal and natural/improvised rehearsal.
+
+## Current Limitations
+The screenplay parser currently works with the tested (BRUCE ALMIGHTY) script format but not against every screenplay formatting style.
+The AI can sometimes improvise dialogue when the intended behavior is to follow the script exactly.
+The application currently uses a limited recent conversation history and a fixed scene window rather than an advanced long-term context system.
+
+## Next Steps
+
+* Improve screenplay parsing adaptability.
+* Add tests for different screenplay formatting patterns.
+* Add strict script rehearsal mode.
+* Separate strict rehearsal from natural/improvised rehearsal.
+* Improve context management for longer scenes.
+* Continue improving the rehearsal UI.
+* Begin building memorization features such as missing-line practice and flashcards.
+
+----------------------------------------------------------------------------------------------------------------------------------------
 
 
-### Current limitation
-Screenplay parsing uses heuristics, not a grammar; rare false positives can slip through
-
-Future improvement:
-- cheap v2 where it would send only the short filtered candidate list to the LLM ("which of these are character names?"); tiny, cheap call
