@@ -1,5 +1,7 @@
 # AI Theatre Coach
 
+🎭 **[Try the Live Demo](https://ai-theatre-coach.streamlit.app)**
+
 AI Theatre Coach is a Streamlit application that lets actors upload a screenplay and rehearse scenes against an AI scene partner.
 
 The actor selects the character they want to play, and the application follows the uploaded screenplay while the AI voices every other character in the scene. The active AI character and relevant scene context are updated dynamically as the rehearsal progresses.
@@ -44,8 +46,7 @@ AI Theatre Coach
 ```
 
 ### `app.py`
-
-Contains the Streamlit user interface and coordinates the rehearsal workflow.
+Contains the Streamlit user interface and connects user interactions to the core application modules.
 
 The UI is kept separate from the underlying logic so screenplay parsing, conversation management, prompting, and API communication do not depend directly on Streamlit.
 
@@ -80,14 +81,25 @@ The application intentionally keeps Streamlit-specific UI code in `app.py` while
 This keeps the core behavior independent from the interface and makes individual parts of the application easier to reason about and test.
 
 ## How to Run Locally
+
 Clone the repository:
+
 ```bash
-git clone <repository-url>
-cd <repository-folder>
+git clone https://github.com/saigudd/ai-theatre-coach.git
+cd ai-theatre-coach
 ```
 
+Install the dependencies:
+
+```bash
 pip install -r requirements.txt
-Create a .env file in the project root with OPENAI_API_KEY=your-key-here.
+```
+
+Create a `.env` file in the project root with:
+
+```text
+OPENAI_API_KEY=your-key-here
+```
 
 Start the Streamlit application:
 
@@ -99,9 +111,9 @@ Then open the Streamlit application in your browser and upload a `.txt` screenpl
 
 ## Live Demo
 
-The deployed application is available here:
+Try the deployed application:
 
-[Live Demo](https://ai-theatre-coach.streamlit.app)
+[AI Theatre Coach](https://ai-theatre-coach.streamlit.app)
 
 ## Testing
 
@@ -116,7 +128,7 @@ The project includes a `pytest` test suite covering:
 
 The screenplay parser relies on screenplay structure and formatting conventions. Scripts that use significantly different formatting may not be parsed correctly.
 
-### No Strict Script Mode Yet
+### AI May Paraphrase Scripted Dialogue
 
 The AI currently uses the screenplay as context but may paraphrase dialogue instead of reciting the original line verbatim.
 
