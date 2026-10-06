@@ -29,9 +29,9 @@ unique_characters = []
 if uploaded_file is not None:
   raw_text = uploaded_file.read().decode("utf-8")
   parsed_lines = parse_script(raw_text)
+
   unique_characters = main_character(parsed_lines, min_lines=3)
 
-  parsed_lines = [line for line in parsed_lines if line.character in unique_characters]
 
 
   if not unique_characters:
@@ -52,19 +52,19 @@ load_disabled = uploaded_file is None or not user_character
 if st.button("Load Script ", disabled=load_disabled):
   st.session_state.conversation.turns = [] #wipes previous scenes
   st.session_state.current_line_idx = 0 #reset pointer to start of script
-
-  idx = 0
   st.success("Script loaded! Ready to rehearse")
 
 st.divider()
+
+
 
 #recalculates and stays visible on screen every time the UI re-renders!
 idx = st.session_state.current_line_idx
 
 #check to make sure we didn't reach the end
 if parsed_lines and idx < len(parsed_lines):
-
   upcoming = parsed_lines[idx]
+
   if upcoming.character == user_character:
     if st.button("Show my line"):
       st.caption(f"Your line : {upcoming.dialogue}")
@@ -79,6 +79,7 @@ with st.form(key="rehearse_form", clear_on_submit=True):
     "Rehearse", disabled=(uploaded_file is None or not user_character)
   )   
 
+#submit handler
 if submitted:
   if not next_line.strip():
     st.warning("Type a line first.")
@@ -117,6 +118,8 @@ if submitted:
         st.rerun()
     else:
       st.rerun() #runs twice so it stops this execution and start a fresh script from the top.
+
+
 
 
 ## will implement this for improv mode 

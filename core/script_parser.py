@@ -16,6 +16,7 @@ def parse_script(raw_test: str) -> list[ScriptLine]:
   result = []
   current_character = None
   dialogue_buffer = []
+  seen_scene_heading = False
 
   def flush():
 
@@ -31,10 +32,17 @@ def parse_script(raw_test: str) -> list[ScriptLine]:
       #resets for next character/dialogue
       current_character = None
       dialogue_buffer = []
-      pass
+      
 
   for raw_line in raw_test.splitlines():
     line = raw_line.strip()
+
+    if line.startswith(("INT.", "EXT.", "INT./EXT.", "EXT./INT.")):
+      seen_scene_heading = True
+      continue
+
+    if not seen_scene_heading:
+      continue
 
     if is_character_line(line):
       flush()
@@ -114,4 +122,3 @@ def normalize_character_name(raw_name: str) -> str:
 
   return name
 
-  
