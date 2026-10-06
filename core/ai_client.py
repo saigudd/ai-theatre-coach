@@ -3,7 +3,7 @@ from openai import OpenAI, OpenAIError
 from config import settings
 import streamlit as st
 
-api_key = st.secrets.get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
+api_key = os.environ.get("OPENAI_API_KEY")
 client = OpenAI(api_key=api_key)
 
 class AIClientError(Exception):

@@ -18,7 +18,7 @@ def clear_scene():
   st.session_state.current_line_idx = 0 
 
 #ui-elements
-st.title("AI Line Partner")
+st.set_page_config(page_title="AI Theatre Coach", page_icon="🎭")
 
 #file uploader
 uploaded_file = st.file_uploader("Upload your script file (.txt)", type=["txt"])
@@ -30,6 +30,9 @@ if uploaded_file is not None:
   raw_text = uploaded_file.read().decode("utf-8")
   parsed_lines = parse_script(raw_text)
   unique_characters = main_character(parsed_lines, min_lines=3)
+
+  parsed_lines = [line for line in parsed_lines if line.character in unique_characters]
+
 
   if not unique_characters:
     st.warning("No characters detected. This parser expects standard screenplay formatting (ALL CAPS name on its own line.")
