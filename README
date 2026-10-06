@@ -1,38 +1,140 @@
 # AI Theatre Coach
 
-An AI-powered rehearsal partner built with Python, Streamlit, and the OpenAI API that helps actors rehearse scenes, stay in character, and better understand their roles.
+AI Theatre Coach is a Streamlit application that lets actors upload a screenplay and rehearse scenes against an AI scene partner.
 
-## Current Features
+The actor selects the character they want to play, and the application follows the uploaded screenplay while the AI voices every other character in the scene. The active AI character and relevant scene context are updated dynamically as the rehearsal progresses.
 
-- AI-powered scene partner
-- Character-aware dialogue
-- Scene context prompting
-- Prompt engineering for in-character responses
-- Streamlit web interface
-- OpenAI API integration
-- Git version control
+Built with **Python**, **Streamlit**, and the **OpenAI Responses API**.
 
-## Tech Stack
+## Overview
 
-- Python
-- Streamlit
-- OpenAI API
-- python-dotenv
-- Git & GitHub
+AI Theatre Coach is designed around screenplay-aware rehearsal rather than a generic chatbot interaction.
 
-## Roadmap
+Actors can upload a `.txt` screenplay, select a detected character, and rehearse through the script. The application tracks the screenplay's progression and determines which character should speak next.
 
-- [ ] Persistent conversation memory
-- [ ] Script upload and parsing
-- [ ] Memorization mode
-- [ ] Character exploration mode
-- [ ] Acting coach feedback
-- [ ] Improv mode
-- [ ] Voice conversations
-- [ ] Streaming AI responses
-- [ ] Theatre-inspired UI
-- [ ] Deploy online
+When another character's turn arrives, the system dynamically rebuilds the prompt and relevant scene context so the AI can respond as that specific character.
 
-## Why I Built This
+## Features
 
-This project is helping me learn practical AI engineering by building a real application from the ground up. Along the way, I'm gaining experience with prompt engineering, application state management, API integration, software architecture, and iterative development.
+- Upload screenplay files in `.txt` format
+- Parse screenplay dialogue and character cues
+- Automatically identify characters from the uploaded script
+- Select which character the actor wants to rehearse
+- Rehearse against an AI partner that voices the other characters
+- Dynamically switch the AI between characters as the scene progresses
+- Maintain conversation state throughout the rehearsal
+- Rebuild the system prompt and scene context window on every turn
+- Modular separation between the Streamlit interface and application logic
+- Automated tests for screenplay parsing and conversation management
+
+## Architecture
+
+The project separates the user interface from the core application logic.
+
+```text
+AI Theatre Coach
+│
+├── app.py
+│
+└── core/
+    ├── ai_client.py
+    ├── prompts.py
+    ├── conversation.py
+    └── script_parser.py
+```
+
+### `app.py`
+
+Contains the Streamlit user interface and coordinates the rehearsal workflow.
+
+The UI is kept separate from the underlying logic so screenplay parsing, conversation management, prompting, and API communication do not depend directly on Streamlit.
+
+### `core/ai_client.py`
+
+Handles communication with the OpenAI Responses API.
+
+### `core/prompts.py`
+
+Builds the prompts used during rehearsal.
+
+The system prompt and relevant scene context are rebuilt dynamically during each turn so the AI knows which character it should currently portray.
+
+### `core/conversation.py`
+
+Manages the rehearsal conversation and conversation history.
+
+### `core/script_parser.py`
+
+Parses uploaded screenplay text into structured character dialogue.
+
+The parser uses a **hand-rolled state machine rather than regular expressions**.
+
+Character detection begins after the screenplay's first `INT.` or `EXT.` scene heading. The parser identifies ALL-CAPS character cues and extracts their dialogue.
+
+A frequency heuristic is then used to determine which detected characters appear frequently enough to be selectable as the actor's role.
+
+### Why Separate UI and Logic?
+
+The application intentionally keeps Streamlit-specific UI code in `app.py` while placing screenplay parsing, prompting, API communication, and conversation management inside separate modules.
+
+This keeps the core behavior independent from the interface and makes individual parts of the application easier to reason about and test.
+
+## How to Run Locally
+Clone the repository:
+```bash
+git clone <repository-url>
+cd <repository-folder>
+```
+
+pip install -r requirements.txt
+Create a .env file in the project root with OPENAI_API_KEY=your-key-here.
+
+Start the Streamlit application:
+
+```bash
+streamlit run app.py
+```
+
+Then open the Streamlit application in your browser and upload a `.txt` screenplay to begin rehearsing.
+
+## Live Demo
+
+The deployed application is available here:
+
+[Live Demo](https://ai-theatre-coach.streamlit.app)
+
+## Testing
+
+The project includes a `pytest` test suite covering:
+
+- Screenplay parsing
+- Conversation management
+
+## Known Limitations
+
+### Screenplay Formatting Sensitivity
+
+The screenplay parser relies on screenplay structure and formatting conventions. Scripts that use significantly different formatting may not be parsed correctly.
+
+### No Strict Script Mode Yet
+
+The AI currently uses the screenplay as context but may paraphrase dialogue instead of reciting the original line verbatim.
+
+A strict rehearsal mode that follows screenplay dialogue exactly has not yet been implemented.
+
+## What I Learned
+
+Building AI Theatre Coach involved more than connecting a user interface to an LLM.
+
+The project required treating the screenplay as structured data and maintaining application state as the rehearsal moved through different characters and lines.
+
+Key areas explored while building the project include:
+
+- Designing a state-machine-based screenplay parser
+- Separating UI code from application logic
+- Managing multi-turn conversation state
+- Maintaining character identity across a scene
+- Dynamically rebuilding prompts based on application state
+- Providing relevant screenplay context to an AI model
+- Structuring an AI application into independent modules
+- Testing screenplay parsing and conversation-management logic with `pytest`
