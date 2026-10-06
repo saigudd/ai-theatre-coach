@@ -1,6 +1,6 @@
 # AI Theatre Coach
 
-🎭 **[Try the Live Demo](https://ai-theatre-coach.streamlit.app)**
+🎭 **[Try the Live Demo](https://ai-theatre-coach.streamlit.app/)**
 
 AI Theatre Coach is a Streamlit application that lets actors upload a screenplay and rehearse scenes against an AI scene partner.
 
@@ -113,7 +113,7 @@ Then open the Streamlit application in your browser and upload a `.txt` screenpl
 
 Try the deployed application:
 
-[AI Theatre Coach](https://ai-theatre-coach.streamlit.app)
+[AI Theatre Coach](https://ai-theatre-coach.streamlit.app/)
 
 ## Testing
 
