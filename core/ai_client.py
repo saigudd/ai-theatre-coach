@@ -1,7 +1,10 @@
+import os
 from openai import OpenAI, OpenAIError
 from config import settings
+import streamlit as st
 
-client = OpenAI()
+api_key = st.secrets.get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
+client = OpenAI(api_key=api_key)
 
 class AIClientError(Exception):
   "raised when AI client fails to return a response"

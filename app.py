@@ -83,8 +83,6 @@ if submitted:
     st.info("You've reached the end of the script!")
   else: 
     convo = st.session_state.conversation
-
-
     convo.add_actor_line(user_character, next_line)
     st.session_state.current_line_idx += 1
 
