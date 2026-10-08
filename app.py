@@ -59,7 +59,7 @@ def advance_through_other_characters(convo, parsed_lines, next_idx, user_charact
 
 #file 
 with st.sidebar:
-  st.subheader("1. Upload your Script")
+  st.subheader("Script")
   uploaded_file = st.file_uploader("Upload your script file (.txt)", type=["txt"])
 
 parsed_lines = []
@@ -84,7 +84,7 @@ else:
 
 #dropdown for user to pick character
 with st.sidebar:
-  st.subheader("2. Choose your character")
+  st.subheader("Your character")
   user_character = st.selectbox(
     "Select the character YOU are playing!:",
     options=unique_characters,
@@ -110,7 +110,7 @@ idx = st.session_state.current_line_idx
 
 
 if parsed_lines:
-  st.subheader("3. Rehearse")
+  st.subheader("Rehearsal")
   st.progress(idx / len(parsed_lines), text=f"Line {idx + 1} of {len(parsed_lines)}")
 
 #check to make sure we didn't reach the end
@@ -164,17 +164,38 @@ if submitted:
 
 
 #clear chat button
-st.button("Clear Scene", on_click=clear_scene)
+if st.button("Clear Scene", on_click=clear_scene):
+  clear_scene()
+  st.rerun() #makes the chat history blank
 
-#responses space
-st.divider()
-for turn in st.session_state.conversation.turns:
-  #shows the user_character instead of "YOU"
+def render_turn(turn):
   speaker = turn.get('character', 'You' if turn["role"] == "user" else "Partner")
   avatar = "🎤" if turn["role"] == "user" else "🎭"
   with st.chat_message(turn["role"], avatar=avatar):
     st.markdown(f"**{speaker}**")
     st.write(turn["content"])
+
+
+st.divider()
+
+#collapses the old turns so user don't have to keep scrolling
+MAX_VISIBLE_TURNS = 20
+turns = st.session_state.conversation.turns
+
+
+if len(turns) > MAX_VISIBLE_TURNS:
+  hidden = turns[:-MAX_VISIBLE_TURNS]
+  visible = turns[-MAX_VISIBLE_TURNS:]
+
+  #saves the previous lines as well when it get removed 
+  with st.expander(f"Show {len(hidden)} earlier line(s)"):
+    for turn in hidden:
+      render_turn(turn)
+else:
+  visible = turns
+
+for turn in visible:
+  render_turn(turn)
 
 
 
