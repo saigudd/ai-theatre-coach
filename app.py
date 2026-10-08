@@ -2,7 +2,10 @@ import streamlit as st
 from config import settings
 from core import get_ai_response, AIClientError, build_scene_prompt, ConversationManager, parse_script, main_character
 
-
+#ui-elements
+st.set_page_config(page_title="AI Theatre Coach", page_icon="🎭", layout="centered")
+st.title("🎭 AI Theatre Coach 🎭")
+st.caption("Upload a screenplay and rehearse opposite an AI partner who voices every other character.")
 
 if "conversation" not in st.session_state:
   st.session_state.conversation = ConversationManager(max_turns=settings.MAX_HISTORY_TURNS)
@@ -17,11 +20,12 @@ def clear_scene():
   st.session_state.conversation.system_prompt = ""
   st.session_state.current_line_idx = 0 
 
-#ui-elements
-st.set_page_config(page_title="AI Theatre Coach", page_icon="🎭")
 
-#file uploader
-uploaded_file = st.file_uploader("Upload your script file (.txt)", type=["txt"])
+
+#file 
+with st.sidebar:
+  st.subheader("1. Upload your Script")
+  uploaded_file = st.file_uploader("Upload your script file (.txt)", type=["txt"])
 
 parsed_lines = []
 unique_characters = []
@@ -38,20 +42,28 @@ if uploaded_file is not None:
     st.warning("No characters detected. This parser expects standard screenplay formatting (ALL CAPS name on its own line.")
 
 else:
+  with st.sidebar:
+    st.info("Upload a .txt screenplay to begin. Standard format works best: ALL CAPS character names on their own line, after an INT./EXT. scene heading.")
   parsed_lines = []
   unique_characters = []
 
 #dropdown for user to pick character
-user_character = st.selectbox(
-  "Select the character YOU are playing!:",
-  options=unique_characters,
-  disabled=(uploaded_file is None) #will not show until file is uploaded
+with st.sidebar:
+  st.subheader("2. Choose your character")
+  user_character = st.selectbox(
+    "Select the character YOU are playing!:",
+    options=unique_characters,
+    disabled=(uploaded_file is None) #will not show until file is uploaded
 )
 
 load_disabled = uploaded_file is None or not user_character
 if st.button("Load Script ", disabled=load_disabled):
   st.session_state.conversation.turns = [] #wipes previous scenes
-  st.session_state.current_line_idx = 0 #reset pointer to start of script
+
+  #ensures it showcases the character that is picked
+  starting_idx = next(
+    (i for i, line in enumerate(parsed_lines) if line.character == user_character), 0)
+  st.session_state.current_line_idx = starting_idx 
   st.success("Script loaded! Ready to rehearse")
 
 st.divider()
@@ -60,6 +72,11 @@ st.divider()
 
 #recalculates and stays visible on screen every time the UI re-renders!
 idx = st.session_state.current_line_idx
+
+
+if parsed_lines:
+  st.subheader("3. Rehearse")
+  st.progress(idx / len(parsed_lines), text=f"Line {idx + 1} of {len(parsed_lines)}")
 
 #check to make sure we didn't reach the end
 if parsed_lines and idx < len(parsed_lines):
@@ -88,36 +105,32 @@ if submitted:
   else: 
     convo = st.session_state.conversation
     convo.add_actor_line(user_character, next_line)
-    st.session_state.current_line_idx += 1
+    next_idx = idx  + 1
 
-    next_idx = st.session_state.current_line_idx
-    ai_should_respond = (
-      next_idx < len(parsed_lines)
-      and parsed_lines[next_idx].character != user_character
-    )
+    #runs continuously to handle multiple back-to-back AI lines
+    while next_idx < len(parsed_lines) and parsed_lines[next_idx].character != user_character:
+      ai_character = parsed_lines[next_idx].character
+      scene_window = parsed_lines[next_idx : next_idx + 10] #context
+      
+      
+      convo.system_prompt = build_scene_prompt(
+        user_character=user_character,
+        ai_character=ai_character,
+        upcoming_lines=scene_window
+      )
 
-    if ai_should_respond:
       try:
-        with st.spinner("Partner is thinking..."):
-
-          upcoming_character = parsed_lines[next_idx].character 
-          scene_window = parsed_lines[idx : idx + 10] #ai constantly gets context, hence be able to switch character if needed
-
-          convo.system_prompt = build_scene_prompt(
-            user_character=user_character,
-            ai_character=upcoming_character,
-            upcoming_lines=scene_window
-          )
-
+        with st.spinner(f"{ai_character} is thinking..."):
           answer = get_ai_response(convo.to_messages())
       except AIClientError as e:
         st.error(f"Error talking to AI: {e}")
+        break #stops if API breaks
       else:
-        convo.add_ai_line(upcoming_character, answer)
-        st.session_state.current_line_idx += 1
-        st.rerun()
-    else:
-      st.rerun() #runs twice so it stops this execution and start a fresh script from the top.
+        convo.add_ai_line(ai_character, answer)
+        next_idx += 1 #goes to the next line
+ 
+    st.session_state.current_line_idx = next_idx
+    st.rerun() #runs twice so it stops this execution and start a fresh script from the top.
 
 
 
@@ -137,7 +150,11 @@ st.divider()
 for turn in st.session_state.conversation.turns:
   #shows the user_character instead of "YOU"
   speaker = turn.get('character', 'You' if turn["role"] == "user" else "Partner")
-  st.write(f"**{speaker}**: {turn['content']}")
+  avatar = "🎤" if turn["role"] == "user" else "🎭"
+  with st.chat_message(turn["role"], avatar=avatar):
+    st.markdown(f"**{speaker}**")
+    st.write(turn["content"])
+
 
 
 
