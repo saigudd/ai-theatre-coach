@@ -131,8 +131,16 @@ The screenplay parser relies on screenplay structure and formatting conventions.
 ### AI May Paraphrase Scripted Dialogue
 
 The AI currently uses the screenplay as context but may paraphrase dialogue instead of reciting the original line verbatim.
-
 A strict rehearsal mode that follows screenplay dialogue exactly has not yet been implemented.
+
+### Scene Boundaries Are Not Parsed Yet
+The parser doesn't track scene headings as scene-boundaries. If your character speaks early and not again until later, the app measures the distance to your next line and offers a "Skip to my next scene" jump instead of generating dialogue for everything in between. 
+The threshold is a heuristic, not a true scene boundary. Scene-aware parsing and a scene picker are planned.
+
+### Parser Noise
+Occasionally, scene-heading fragments or camera directions are misread as minor characters. Auto-advance is capped per click so this stays bounded.
+
+
 
 ## What I Learned
 
