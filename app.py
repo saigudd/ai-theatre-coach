@@ -20,6 +20,41 @@ def clear_scene():
   st.session_state.conversation.system_prompt = ""
   st.session_state.current_line_idx = 0 
 
+MAX_AI_TURNS_PER_CLICK = 4
+
+def advance_through_other_characters(convo, parsed_lines, next_idx, user_character, max_turns):
+  """Auto-generates AI dialogue for consecutive non-user characters.
+  End parameters: user's next line, end of script, or max_turns (whichever comes first)
+  WHY: to avoid unbounded, costly, off-script run."""
+  
+  turns_used = 0
+  
+  while (
+    next_idx < len(parsed_lines)
+    and parsed_lines[next_idx].character != user_character
+    and turns_used < max_turns
+  ):
+    ai_character = parsed_lines[next_idx].character
+    scene_window = parsed_lines[next_idx : next_idx + 10]
+    convo.system_prompt = build_scene_prompt(
+      user_character=user_character,
+      ai_character=ai_character,
+      upcoming_lines=scene_window
+    )
+    try:
+      with st.spinner(f"{ai_character} is thinking..."):
+        answer = get_ai_response(convo.to_messages())
+    except AIClientError as e:
+      st.error(f"Error talking to AI: {e}")
+      break #stops if API breaks
+    else:
+      convo.add_ai_line(ai_character, answer)
+      next_idx += 1 #goes to the next line
+      turns_used += 1
+      
+  return next_idx
+
+
 
 
 #file 
@@ -88,6 +123,14 @@ if parsed_lines and idx < len(parsed_lines):
   else:
     st.caption(f"Scene continues. {upcoming.character} speaks next.")
 
+    #doesn't keep the user waiting for lines
+    if st.button("Continue Scene"):
+      convo = st.session_state.conversation
+      next_idx = advance_through_other_characters(convo, parsed_lines, idx, user_character, MAX_AI_TURNS_PER_CLICK)
+      
+      st.session_state.current_line_idx = next_idx
+      st.rerun()
+
 ##showcasing the rehearsal
 
 with st.form(key="rehearse_form", clear_on_submit=True):
@@ -105,30 +148,8 @@ if submitted:
   else: 
     convo = st.session_state.conversation
     convo.add_actor_line(user_character, next_line)
-    next_idx = idx  + 1
+    next_idx = advance_through_other_characters(convo, parsed_lines, idx + 1, user_character, MAX_AI_TURNS_PER_CLICK)
 
-    #runs continuously to handle multiple back-to-back AI lines
-    while next_idx < len(parsed_lines) and parsed_lines[next_idx].character != user_character:
-      ai_character = parsed_lines[next_idx].character
-      scene_window = parsed_lines[next_idx : next_idx + 10] #context
-      
-      
-      convo.system_prompt = build_scene_prompt(
-        user_character=user_character,
-        ai_character=ai_character,
-        upcoming_lines=scene_window
-      )
-
-      try:
-        with st.spinner(f"{ai_character} is thinking..."):
-          answer = get_ai_response(convo.to_messages())
-      except AIClientError as e:
-        st.error(f"Error talking to AI: {e}")
-        break #stops if API breaks
-      else:
-        convo.add_ai_line(ai_character, answer)
-        next_idx += 1 #goes to the next line
- 
     st.session_state.current_line_idx = next_idx
     st.rerun() #runs twice so it stops this execution and start a fresh script from the top.
 
