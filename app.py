@@ -7,6 +7,13 @@ st.set_page_config(page_title="AI Theatre Coach", page_icon="🎭", layout="cent
 st.title("🎭 AI Theatre Coach 🎭")
 st.caption("Upload a screenplay and rehearse opposite an AI partner who voices every other character.")
 
+if not settings.OPENAI_API_KEY:
+  st.warning(
+    "The AI partner is not configured yet. The app owner needs to set "
+    "OPENAI_API_KEY in the local .env file or Streamlit Secrets, then restart the app."
+  )
+  st.stop()
+
 if "conversation" not in st.session_state:
   st.session_state.conversation = ConversationManager(max_turns=settings.MAX_HISTORY_TURNS)
 if "rehearse_count" not in st.session_state:
@@ -45,7 +52,7 @@ def advance_through_other_characters(convo, parsed_lines, next_idx, user_charact
       with st.spinner(f"{ai_character} is thinking..."):
         answer = get_ai_response(convo.to_messages())
     except AIClientError as e:
-      st.error(f"Error talking to AI: {e}")
+      st.session_state.last_error = f"Error talking to AI: {e}"
       break #stops if API breaks
     else:
       convo.add_ai_line(ai_character, answer)
