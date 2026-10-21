@@ -1,5 +1,66 @@
 # AI Theatre Coach Development Log
 
+## October 14, 2026 — Milestone 1: Safe startup and an offline test baseline
+
+### Problem and changes
+
+The previous session was a read-only audit. Importing a parser submodule still
+executed `core/__init__.py`, imported the AI module, and constructed an OpenAI
+client. The manual API experiment also made a real request during pytest
+collection.
+
+- Moved default client construction into a lazily called, cached `_get_client()`.
+- Deferred configuration imports until an AI request needs the default settings.
+- Added optional keyword-only `client` and `model` arguments for offline tests;
+  existing application calls still use `get_ai_response(messages)`.
+- Kept the existing Responses API call, model setting, error wrapper, and
+  empty-output behavior. Initialization errors now occur inside that wrapper.
+- Added a missing-key warning and `st.stop()` near the top of the Streamlit UI.
+- Put both the API experiment and session-state experiment behind `main()` guards.
+- Added `requirements-dev.txt` with the installed pytest version pinned separately
+  from runtime requirements.
+- Added test-session isolation for credentials and outbound socket connections,
+  starting before collection; added `.streamlit/secrets.toml` and pytest cache
+  ignore rules.
+
+The existing config fallback and core exports did not need modification. Existing
+uncommitted rehearsal changes in `app.py` and `core/conversation.py` were preserved.
+No parser, prompt, or rehearsal progression rules were changed.
+
+### Verification
+
+- First reproduced an import regression test failing because the old code created
+  an OpenAI client while importing the parser.
+- After implementation: 28 tests passed (14 existing and 14 new).
+- New coverage: fresh-process imports, default collection, fake response forwarding,
+  empty/provider errors, missing-key requests, client reuse/initialization failure,
+  and configured/unconfigured Streamlit startup.
+- No paid API requests were made; the manual API experiment was not executed.
+- The initial sandbox run passed but encountered a Windows temporary-directory
+  cleanup permission error. The suite was rerun outside that sandbox restriction:
+  28 passed in 13.91 seconds with a clean exit.
+- `pip check` reported no broken requirements. `git diff --check` reported only
+  pre-existing whitespace in the author's rehearsal edits; those were preserved.
+
+### Engineering concepts demonstrated
+
+Python executes package initializers during submodule imports. Moving resource
+creation behind a function removes that import-time dependency. A cached factory
+reuses the client without constructing it at startup. Explicit dependency injection
+lets tests provide predictable responses. Session-level test hooks protect
+collection as well as execution; ordinary fixtures run too late to protect module
+imports. Exception chaining keeps the original provider failure available.
+
+These concepts have been explained in the implementation handoff; the author's
+learning checkpoint is pending, not recorded as completed.
+
+### Boundaries and follow-up
+
+Settings and the default client remain process-scoped: restart after changing
+credentials. A passing offline suite does not verify live API credentials or model
+quality. Known rehearsal-state bugs from the audit remain for Milestone 2. This is
+a foundation checkpoint, not a public-release readiness claim. No commit was made.
+
 ## July 16, 2026
 ### Milestones Completed
 

@@ -1,13 +1,22 @@
-from openai import OpenAI
-from dotenv import load_dotenv
+"""Manual, billable API experiment: python -m tests.openai_test.
 
-load_dotenv()
+Importing this module (including pytest collection) makes no API calls.
+"""
 
-client = OpenAI()
 
-response = client.responses.create(
+def main():
+  from openai import OpenAI
+  from dotenv import load_dotenv
+
+  load_dotenv()
+
+  with OpenAI() as client:
+    response = client.responses.create(
       model="gpt-4o-mini",
       input="Write a verse about attachment and work that Krishna said in the Gita that is similar to the Stotism Meditations by Marcus Aurelius"
-) 
+    )
+    print(response.output_text)
 
-print(response.output_text)
+
+if __name__ == "__main__":
+  main()

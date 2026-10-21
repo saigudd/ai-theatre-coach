@@ -121,6 +121,45 @@ The project includes a `pytest` test suite covering:
 
 - Screenplay parsing
 - Conversation management
+- Credential-free imports and safe default test collection
+- AI response handling with fake clients (including failures and empty output)
+- Lazy client creation/reuse and Streamlit startup with/without configuration
+
+Install development dependencies and run the suite from the project root:
+
+```bash
+python -m pip install -r requirements-dev.txt
+python -m pytest -q
+```
+
+The test session disables dotenv loading, hides local Streamlit secrets, and blocks
+outbound socket connections before collection. No real API key or paid API calls
+are required. Fresh-process import tests also catch side effects that Python's
+module cache could otherwise hide. Tests validate application behavior with fake
+responses; they do not establish real model quality or account connectivity.
+
+`tests/openai_test.py` is a manual, billable experiment, not an automated test.
+It runs only when explicitly invoked with `python -m tests.openai_test`.
+The session-state learning example can be run with
+`streamlit run tests/session_test.py`.
+
+### Startup and client lifecycle
+
+Importing core modules does not resolve application secrets or create an OpenAI
+client. The first real `get_ai_response()` call creates a client and subsequent
+calls reuse it. Tests can supply `client=` and `model=` explicitly instead.
+Configuration is still loaded by the Streamlit entry point; separating it further
+is deferred until a separate backend needs it.
+
+Without `OPENAI_API_KEY`, the app shows setup guidance and stops before rehearsal
+controls. Configure the key in `.env` locally or as a root-level Streamlit secret,
+then restart the app process. Settings and the default client are process-scoped;
+changing credentials requires a restart. Script rehearsal without AI is a future
+milestone, not a feature of this startup change.
+
+Never include `.env`, `.streamlit/secrets.toml`, `venv/`, or `.git/` in a shared
+project ZIP. Ignore rules do not remove previously tracked secrets or protect ZIP
+exports. Previously exposed keys must be rotated separately.
 
 ## Known Limitations
 

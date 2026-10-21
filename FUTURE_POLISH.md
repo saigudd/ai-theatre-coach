@@ -1,3 +1,19 @@
+## Milestone 1 — Safe startup and offline tests (October 14, 2026)
+
+- [x] Import core modules without loading secrets or constructing an API client.
+- [x] Create/reuse the default client on demand; accept fake clients in tests.
+- [x] Show setup guidance instead of crashing on a missing API key at startup.
+- [x] Guard manual API/session experiments so pytest collection is safe.
+- [x] Add pinned development dependencies and block network access during tests.
+- [x] Preserve the existing 14 parser/conversation tests; add 14 boundary tests.
+- [x] Ignore local Streamlit secrets and pytest caches.
+- [ ] Complete the learning checkpoint with the project author.
+
+Next milestone: a testable rehearsal engine and consistent session lifecycle.
+Known issues remain: end-of-role `None - idx` crash, wrong-speaker submissions,
+stale cursors after script changes, and inconsistent load/reset behavior. These
+were identified by the audit and intentionally remain outside Milestone 1.
+
 - ##UI 
 
 - theatre stage aesthetic
