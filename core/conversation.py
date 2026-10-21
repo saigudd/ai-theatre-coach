@@ -22,3 +22,4 @@ class ConversationManager:
     cleaned_history = [{"role": turn['role'], "content": turn["content"]} for turn in history]
 
     return [{"role": "system", "content": self.system_prompt}] + cleaned_history
+

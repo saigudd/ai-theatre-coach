@@ -62,6 +62,16 @@ def advance_through_other_characters(convo, parsed_lines, next_idx, user_charact
   return next_idx
 
 
+#checks to see len(character's lines) and ends the rehearsal quickly IF len = small
+SKIP_GAP_COUNT = 12
+
+def next_user_line_idx(parsed_lines, start_idx, user_character):
+  """idx of user's next line at/after start_idx, or None if they never speak again."""
+  for i in range(start_idx, len(parsed_lines)):
+    if parsed_lines[i].character == user_character:
+      return i
+  return None
+
 
 
 #file 
@@ -112,13 +122,16 @@ st.divider()
 
 
 
-#recalculates and stays visible on screen every time the UI re-renders!
+#PROGRESS BAR
 idx = st.session_state.current_line_idx
-
 
 if parsed_lines:
   st.subheader("Rehearsal")
   st.progress(idx / len(parsed_lines), text=f"Line {idx + 1} of {len(parsed_lines)}")
+
+if st.session_state.get("last_error"):
+  st.error(st.session_state.last_error)
+  st.session_state.last_error = None
 
 #check to make sure we didn't reach the end
 if parsed_lines and idx < len(parsed_lines):
@@ -129,6 +142,27 @@ if parsed_lines and idx < len(parsed_lines):
       st.caption(f"Your line : {upcoming.dialogue}")
   else:
     st.caption(f"Scene continues. {upcoming.character} speaks next.")
+    next_line_pos = next_user_line_idx(parsed_lines, idx, user_character)
+
+    #cacluates the gap distance
+    if next_line_pos is None:
+
+      #FIXED: before if never speak again, gap distance = INFINITE
+      gap = next_line_pos - idx
+      has_long_gap = True
+      
+     
+      st.success("That's all of your character's lines. Nice work!")
+    else:
+       
+      gap = next_line_pos - idx
+      if gap > SKIP_GAP_COUNT:
+        st.info(f"Your next line is {gap} lines away")
+        if st.button("Skip to my next scene/line"):
+          st.session_state.conversation.turns = []
+          st.session_state.current_line_idx = next_line_pos
+          st.rerun()
+
 
     #doesn't keep the user waiting for lines
     if st.button("Continue Scene"):
@@ -171,7 +205,7 @@ if submitted:
 
 
 #clear chat button
-if st.button("Clear Scene", on_click=clear_scene):
+if st.button("Clear Scene"):
   clear_scene()
   st.rerun() #makes the chat history blank
 
