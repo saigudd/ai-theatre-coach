@@ -1,6 +1,6 @@
 import streamlit as st
 from config import settings
-from core import get_ai_response, AIClientError, build_scene_prompt, ConversationManager, parse_script, main_character
+from core import get_ai_response, AIClientError, build_scene_prompt, RehearsalSession, script_fingerprint, parse_script, main_character
 
 #ui-elements
 st.set_page_config(page_title="AI Theatre Coach", page_icon="🎭", layout="centered")
@@ -14,27 +14,25 @@ if not settings.OPENAI_API_KEY:
   )
   st.stop()
 
-if "conversation" not in st.session_state:
-  st.session_state.conversation = ConversationManager(max_turns=settings.MAX_HISTORY_TURNS)
-if "rehearse_count" not in st.session_state:
-  st.session_state.rehearse_count = 0
-if "current_line_idx" not in st.session_state:
-  st.session_state.current_line_idx = 0
+if "rehearsal" not in st.session_state:
+  st.session_state.rehearsal = None
 
 
-def clear_scene():
-  st.session_state.conversation.turns = []
-  st.session_state.conversation.system_prompt = ""
-  st.session_state.current_line_idx = 0 
+def restart_rehearsal():
+  if st.session_state.rehearsal is not None:
+    st.session_state.rehearsal = st.session_state.rehearsal.restart()
 
 MAX_AI_TURNS_PER_CLICK = 4
 
-def advance_through_other_characters(convo, parsed_lines, next_idx, user_character, max_turns):
+def advance_through_other_characters(rehearsal, next_idx, max_turns):
   """Auto-generates AI dialogue for consecutive non-user characters.
   End parameters: user's next line, end of script, or max_turns (whichever comes first)
   WHY: to avoid unbounded, costly, off-script run."""
   
   turns_used = 0
+  convo = rehearsal.conversation
+  parsed_lines = rehearsal.lines
+  user_character = rehearsal.actor
   
   while (
     next_idx < len(parsed_lines)
@@ -52,7 +50,7 @@ def advance_through_other_characters(convo, parsed_lines, next_idx, user_charact
       with st.spinner(f"{ai_character} is thinking..."):
         answer = get_ai_response(convo.to_messages())
     except AIClientError as e:
-      st.session_state.last_error = f"Error talking to AI: {e}"
+      rehearsal.last_error = f"Error talking to AI: {e}"
       break #stops if API breaks
     else:
       convo.add_ai_line(ai_character, answer)
@@ -204,11 +202,6 @@ if submitted:
 
 
 
-#clear chat button
-if st.button("Clear Scene"):
-  clear_scene()
-  st.rerun() #makes the chat history blank
-
 def render_turn(turn):
   speaker = turn.get('character', 'You' if turn["role"] == "user" else "Partner")
   avatar = "🎤" if turn["role"] == "user" else "🎭"
@@ -218,10 +211,14 @@ def render_turn(turn):
 
 
 st.divider()
+st.subheader("Transcript")
 
 #collapses the old turns so user don't have to keep scrolling
 MAX_VISIBLE_TURNS = 20
-turns = st.session_state.conversation.turns
+turns = rehearsal.conversation.turns if rehearsal is not None else []
+
+if not turns:
+  st.caption("Dialogue from this rehearsal will appear here.")
 
 
 if len(turns) > MAX_VISIBLE_TURNS:

@@ -32,6 +32,6 @@ def test_configured_startup_does_not_create_client(monkeypatch):
     app = AppTest.from_file(str(APP), default_timeout=15).run()
 
     assert not app.exception
-    assert app.title[0].value == "🎭 AI Theatre Coach 🎭"
+    assert app.title[0].value == "🎭 AI Theatre Coach"
     assert len(app.text_input) == 1
     constructor.assert_not_called()
