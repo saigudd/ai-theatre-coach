@@ -3,8 +3,8 @@ from config import settings
 from core import get_ai_response, AIClientError, build_scene_prompt, RehearsalSession, script_fingerprint, parse_script, main_character
 
 #ui-elements
-st.set_page_config(page_title="AI Theatre Coach", page_icon="🎭", layout="centered")
-st.title("🎭 AI Theatre Coach 🎭")
+st.set_page_config(page_title="AI Theatre Coach", page_icon="🎭", layout="wide")
+st.title("🎭 AI Theatre Coach")
 st.caption("Upload a screenplay and rehearse opposite an AI partner who voices every other character.")
 
 if not settings.OPENAI_API_KEY:
@@ -74,8 +74,8 @@ def next_user_line_idx(parsed_lines, start_idx, user_character):
 
 #file 
 with st.sidebar:
-  st.subheader("Script")
-  uploaded_file = st.file_uploader("Upload your script file (.txt)", type=["txt"])
+  st.header("Rehearsal setup")
+  uploaded_file = st.file_uploader("Screenplay (.txt)", type=["txt"])
 
 parsed_lines = []
 unique_characters = []
@@ -99,97 +99,150 @@ else:
 
 #dropdown for user to pick character
 with st.sidebar:
-  st.subheader("Your character")
   user_character = st.selectbox(
-    "Select the character YOU are playing!:",
+    "Your character",
     options=unique_characters,
     disabled=(uploaded_file is None) #will not show until file is uploaded
 )
 
 load_disabled = uploaded_file is None or not user_character
-if st.button("Load Script ", disabled=load_disabled):
-  st.session_state.conversation.turns = [] #wipes previous scenes
+with st.sidebar:
+  if st.button(
+    "Start New Rehearsal",
+    key="start_rehearsal",
+    type="primary",
+    use_container_width=True,
+    disabled=load_disabled,
+  ):
+    st.session_state.rehearsal = RehearsalSession.start(
+      raw_text=raw_text,
+      script_name=uploaded_file.name,
+      lines=parsed_lines,
+      actor=user_character,
+      max_history_turns=settings.MAX_HISTORY_TURNS,
+    )
+    st.success("New rehearsal ready.")
 
-  #ensures it showcases the character that is picked
-  starting_idx = next(
-    (i for i, line in enumerate(parsed_lines) if line.character == user_character), 0)
-  st.session_state.current_line_idx = starting_idx 
-  st.success("Script loaded! Ready to rehearse")
+  sidebar_rehearsal = st.session_state.rehearsal
+  if sidebar_rehearsal is not None:
+    st.divider()
+    st.caption("ACTIVE REHEARSAL")
+    st.markdown(f"**{sidebar_rehearsal.script_name}**")
+    st.write(f"Your role: **{sidebar_rehearsal.actor}**")
 
-st.divider()
+    draft_script_id = script_fingerprint(raw_text) if uploaded_file is not None else None
+    if (
+      draft_script_id != sidebar_rehearsal.script_id
+      or user_character != sidebar_rehearsal.actor
+    ):
+      st.info("Setup changed. Start a new rehearsal to apply these choices.")
+
+    if st.button(
+      "Restart Rehearsal",
+      key="restart_rehearsal",
+      use_container_width=True,
+      help="Return to your first cue and clear this rehearsal's transcript.",
+    ):
+      restart_rehearsal()
+      st.rerun()
 
 
 
 #PROGRESS BAR
-idx = st.session_state.current_line_idx
+rehearsal = st.session_state.rehearsal
+active_lines = rehearsal.lines if rehearsal is not None else ()
+active_actor = rehearsal.actor if rehearsal is not None else None
+idx = rehearsal.current_line_idx if rehearsal is not None else 0
 
-if parsed_lines:
-  st.subheader("Rehearsal")
-  st.progress(idx / len(parsed_lines), text=f"Line {idx + 1} of {len(parsed_lines)}")
+if rehearsal is not None:
+  upcoming_character = (
+    active_lines[idx].character if idx < len(active_lines) else "Complete"
+  )
+  st.header("Rehearsal workspace")
+  script_col, actor_col, turn_col = st.columns(3)
+  script_col.metric("Screenplay", rehearsal.script_name)
+  actor_col.metric("Your role", active_actor)
+  turn_col.metric("Current turn", upcoming_character)
 
-if st.session_state.get("last_error"):
-  st.error(st.session_state.last_error)
-  st.session_state.last_error = None
+  completed_position = min(idx, len(active_lines))
+  visible_line = min(idx + 1, len(active_lines))
+  st.progress(
+    completed_position / len(active_lines),
+    text=f"Line {visible_line} of {len(active_lines)}",
+  )
+else:
+  st.info("Upload a screenplay, choose your character, and start a rehearsal.")
+
+if rehearsal is not None and rehearsal.last_error:
+  st.error(rehearsal.last_error)
+  rehearsal.last_error = None
 
 #check to make sure we didn't reach the end
-if parsed_lines and idx < len(parsed_lines):
-  upcoming = parsed_lines[idx]
+if rehearsal is not None:
+  with st.container(border=True):
+    st.caption("CURRENT CUE")
+    if idx < len(active_lines):
+      upcoming = active_lines[idx]
 
-  if upcoming.character == user_character:
-    if st.button("Show my line"):
-      st.caption(f"Your line : {upcoming.dialogue}")
-  else:
-    st.caption(f"Scene continues. {upcoming.character} speaks next.")
-    next_line_pos = next_user_line_idx(parsed_lines, idx, user_character)
+      if upcoming.character == active_actor:
+        st.subheader(f"Your turn · {active_actor}")
+        st.caption("Deliver your next line when you're ready.")
+        if st.button("Show My Line"):
+          st.info(upcoming.dialogue)
+      else:
+        st.subheader(f"{upcoming.character}'s turn")
+        st.caption("Continue when you're ready to hear the next partner line.")
+        next_line_pos = next_user_line_idx(active_lines, idx, active_actor)
 
-    #cacluates the gap distance
-    if next_line_pos is None:
+        #cacluates the gap distance
+        if next_line_pos is None:
 
-      #FIXED: before if never speak again, gap distance = INFINITE
-      gap = next_line_pos - idx
-      has_long_gap = True
-      
-     
-      st.success("That's all of your character's lines. Nice work!")
-    else:
-       
-      gap = next_line_pos - idx
-      if gap > SKIP_GAP_COUNT:
-        st.info(f"Your next line is {gap} lines away")
-        if st.button("Skip to my next scene/line"):
-          st.session_state.conversation.turns = []
-          st.session_state.current_line_idx = next_line_pos
+          #FIXED: before if never speak again, gap distance = INFINITE
+          gap = next_line_pos - idx
+          has_long_gap = True
+
+          st.success("That's all of your character's lines. Nice work!")
+        else:
+
+          gap = next_line_pos - idx
+          if gap > SKIP_GAP_COUNT:
+            st.info(f"Your next line is {gap} lines away")
+            if st.button("Skip to my next scene/line"):
+              rehearsal.conversation.turns = []
+              rehearsal.current_line_idx = next_line_pos
+              st.rerun()
+
+
+        #doesn't keep the user waiting for lines
+        if st.button("Continue Scene", type="primary"):
+          next_idx = advance_through_other_characters(rehearsal, idx, MAX_AI_TURNS_PER_CLICK)
+
+          rehearsal.current_line_idx = next_idx
           st.rerun()
-
-
-    #doesn't keep the user waiting for lines
-    if st.button("Continue Scene"):
-      convo = st.session_state.conversation
-      next_idx = advance_through_other_characters(convo, parsed_lines, idx, user_character, MAX_AI_TURNS_PER_CLICK)
-      
-      st.session_state.current_line_idx = next_idx
-      st.rerun()
+    else:
+      st.success("Rehearsal complete. Restart from the sidebar to run it again.")
 
 ##showcasing the rehearsal
 
+st.subheader("Your line")
 with st.form(key="rehearse_form", clear_on_submit=True):
   next_line = st.text_input("Enter your next line:")
   submitted = st.form_submit_button(
-    "Rehearse", disabled=(uploaded_file is None or not user_character)
+    "Rehearse", disabled=(rehearsal is None)
   )   
 
 #submit handler
 if submitted:
   if not next_line.strip():
     st.warning("Type a line first.")
-  elif idx >= len(parsed_lines):
+  elif idx >= len(active_lines):
     st.info("You've reached the end of the script!")
   else: 
-    convo = st.session_state.conversation
-    convo.add_actor_line(user_character, next_line)
-    next_idx = advance_through_other_characters(convo, parsed_lines, idx + 1, user_character, MAX_AI_TURNS_PER_CLICK)
+    convo = rehearsal.conversation
+    convo.add_actor_line(active_actor, next_line)
+    next_idx = advance_through_other_characters(rehearsal, idx + 1, MAX_AI_TURNS_PER_CLICK)
 
-    st.session_state.current_line_idx = next_idx
+    rehearsal.current_line_idx = next_idx
     st.rerun() #runs twice so it stops this execution and start a fresh script from the top.
 
 

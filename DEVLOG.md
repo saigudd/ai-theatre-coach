@@ -1,66 +1,5 @@
 # AI Theatre Coach Development Log
 
-## October 14, 2026 — Milestone 1: Safe startup and an offline test baseline
-
-### Problem and changes
-
-The previous session was a read-only audit. Importing a parser submodule still
-executed `core/__init__.py`, imported the AI module, and constructed an OpenAI
-client. The manual API experiment also made a real request during pytest
-collection.
-
-- Moved default client construction into a lazily called, cached `_get_client()`.
-- Deferred configuration imports until an AI request needs the default settings.
-- Added optional keyword-only `client` and `model` arguments for offline tests;
-  existing application calls still use `get_ai_response(messages)`.
-- Kept the existing Responses API call, model setting, error wrapper, and
-  empty-output behavior. Initialization errors now occur inside that wrapper.
-- Added a missing-key warning and `st.stop()` near the top of the Streamlit UI.
-- Put both the API experiment and session-state experiment behind `main()` guards.
-- Added `requirements-dev.txt` with the installed pytest version pinned separately
-  from runtime requirements.
-- Added test-session isolation for credentials and outbound socket connections,
-  starting before collection; added `.streamlit/secrets.toml` and pytest cache
-  ignore rules.
-
-The existing config fallback and core exports did not need modification. Existing
-uncommitted rehearsal changes in `app.py` and `core/conversation.py` were preserved.
-No parser, prompt, or rehearsal progression rules were changed.
-
-### Verification
-
-- First reproduced an import regression test failing because the old code created
-  an OpenAI client while importing the parser.
-- After implementation: 28 tests passed (14 existing and 14 new).
-- New coverage: fresh-process imports, default collection, fake response forwarding,
-  empty/provider errors, missing-key requests, client reuse/initialization failure,
-  and configured/unconfigured Streamlit startup.
-- No paid API requests were made; the manual API experiment was not executed.
-- The initial sandbox run passed but encountered a Windows temporary-directory
-  cleanup permission error. The suite was rerun outside that sandbox restriction:
-  28 passed in 13.91 seconds with a clean exit.
-- `pip check` reported no broken requirements. `git diff --check` reported only
-  pre-existing whitespace in the author's rehearsal edits; those were preserved.
-
-### Engineering concepts demonstrated
-
-Python executes package initializers during submodule imports. Moving resource
-creation behind a function removes that import-time dependency. A cached factory
-reuses the client without constructing it at startup. Explicit dependency injection
-lets tests provide predictable responses. Session-level test hooks protect
-collection as well as execution; ordinary fixtures run too late to protect module
-imports. Exception chaining keeps the original provider failure available.
-
-These concepts have been explained in the implementation handoff; the author's
-learning checkpoint is pending, not recorded as completed.
-
-### Boundaries and follow-up
-
-Settings and the default client remain process-scoped: restart after changing
-credentials. A passing offline suite does not verify live API credentials or model
-quality. Known rehearsal-state bugs from the audit remain for Milestone 2. This is
-a foundation checkpoint, not a public-release readiness claim. No commit was made.
-
 ## July 16, 2026
 ### Milestones Completed
 
@@ -340,4 +279,156 @@ The application currently uses a limited recent conversation history and a fixed
 
 ----------------------------------------------------------------------------------------------------------------------------------------
 
+## October 14, 2026
+### Milestone 1: Safe Startup and Offline Tests
+
+#### Changes
+
+- Changed the OpenAI client so it is created only when an API request needs it.
+- Kept imports from loading secrets or creating an API client.
+- Added dependency injection so tests can use a fake client.
+- Added a helpful Streamlit warning when the API key is missing.
+- Protected manual experiments so pytest cannot accidentally make a paid request.
+- Added pinned development dependencies and blocked network access during tests.
+- Added tests for startup, imports, API errors, client reuse, and missing credentials.
+- Added local Streamlit secrets and pytest caches to `.gitignore`.
+
+#### Testing
+
+- Reproduced the original import problem before fixing it.
+- Confirmed that importing parser and conversation modules no longer creates an
+  OpenAI client.
+- Ran the full offline test suite: 28 tests passed.
+- Ran `pip check`: no broken requirements were found.
+- No paid API request was made.
+
+#### Learned
+
+- Python runs a package's `__init__.py` when one of its submodules is imported.
+- Importing a module should not create external services or require secrets.
+- Lazy initialization delays resource creation until it is actually needed.
+- Dependency injection makes API code easier and safer to test.
+- Test protection must begin before test collection if imports can cause side
+  effects.
+
+#### Current Limitations
+
+- Passing offline tests does not confirm that a real API key or model works.
+- Settings and the default client are process-scoped, so credential changes require
+  an application restart.
+- Rehearsal lifecycle and cursor problems were left for Milestone 2.
+
+----------------------------------------------------------------------------------------------------------------------------------------
+
+## October 26, 2026
+### Milestone 2 Slice: Rehearsal Session Isolation
+
+#### Problem
+
+The active rehearsal was stored across several separate variables. Changing the
+uploaded script or selected actor could combine new setup choices with the old
+cursor, transcript, or system prompt.
+
+The session needed one rule:
+
+> One active rehearsal belongs to one script and actor. A new rehearsal starts at
+> that actor's first cue with no transcript, prompt, error, or cursor state from the
+> previous rehearsal.
+
+#### Changes
+
+- Added `RehearsalSession` in `core/rehearsal.py`.
+- Stored the script fingerprint, filename, actor, parsed lines, cursor,
+  `ConversationManager`, and temporary error together.
+- Made **Start New Rehearsal** create a fresh session from the current setup choices.
+- Kept uploaded-script and actor selections as drafts until the Start button is used.
+- Made Restart keep the active script and actor but reset rehearsal progress.
+- Updated the Streamlit workspace to show the active script, role, cue, progress,
+  transcript, and restart control.
+- Added regression tests using two different scripts and actor changes.
+
+#### Testing
+
+The first regression test failed against the old behavior because the system prompt
+from Script A survived when Script B started. After the fix:
+
+- The old transcript, prompt, cursor, and error no longer enter the new session.
+- Changing setup widgets does not alter the active rehearsal.
+- Restart returns to the selected actor's first cue.
+- The full offline test suite passed: 30 tests in 17.96 seconds.
+- `pip check` found no broken requirements.
+- No paid API request was made.
+
+#### Learned
+
+- An invariant is a rule that must remain true when application state changes.
+- One session object gives rehearsal state a clear owner.
+- Replacing the whole session is safer than remembering to reset many variables.
+- The current speaker should be calculated from the current parsed line instead of
+  stored as a second value that can become stale.
+- A tuple protects the order and size of parsed lines during a session.
+- A script fingerprint identifies the uploaded script by its contents.
+
+#### Current Limitations
+
+This slice only fixed session isolation. Milestone 2 still needs clear turn
+transitions, wrong-speaker handling, end-of-role behavior, and recovery from failed
+AI partner calls.
+
+----------------------------------------------------------------------------------------------------------------------------------------
+
+## October 26, 2026
+### Tested a Real Avatar Screenplay
+
+#### Problem Found
+
+I tested the current parser with an Avatar screenplay in text format. Selecting JAKE
+appeared to skip some material. The transcript also showed an `AGENT 1` response
+that was different from the actual screenplay.
+
+The app only accepts `.txt` files right now, so users may also have to convert a
+screenplay PDF before they can upload it.
+
+#### What I Investigated
+
+I ran the existing parser against the supplied file without changing parser or
+rehearsal code. It produced 718 dialogue entries.
+
+I found that:
+
+- Character cues such as `JAKE (V.O.)` are skipped because the cue check rejects
+  periods before the name-normalization step runs.
+- Inline parentheticals can remain inside dialogue.
+- `CUT TO:` and action text can become attached to dialogue when the screenplay does
+  not contain the blank lines expected by the parser.
+- The parser correctly found the nearby scripted `AGENT 1` line.
+- The different `AGENT 1` transcript line came from AI generation, not from that
+  parser result.
+
+The screenplay was used only as diagnostic input. It was not copied into the
+repository.
+
+#### What I Learned
+
+Parsing, rehearsal progression, and AI generation are different stages:
+
+1. File input gets text from TXT or PDF.
+2. The parser turns the text into structured screenplay lines.
+3. The rehearsal engine decides which line comes next.
+4. The selected rehearsal mode decides whether the partner uses the exact line or
+   generates a natural response.
+
+A bug should be assigned to the stage that actually caused it.
+
+#### Roadmap Decision
+
+- Finish cursor, turn, end-of-role, and AI failure behavior in Milestone 2.
+- Add PDF input and real-screenplay parser improvements in Milestone 3.
+- Start with text-based PDFs and show an error for scanned PDFs. OCR can come later.
+- Add a Strict Script mode after the parser is reliable. Strict mode should use the
+  parsed partner line directly without an LLM.
+- Keep generated or paraphrased responses in a clearly labeled Natural mode.
+
+`FUTURE_POLISH.md` was reorganized so older ideas appear before milestone updates
+and newly discovered work is added at the bottom.
 

@@ -42,6 +42,7 @@ AI Theatre Coach
     ├── ai_client.py
     ├── prompts.py
     ├── conversation.py
+    ├── rehearsal.py
     └── script_parser.py
 ```
 
@@ -64,6 +65,13 @@ The system prompt and relevant scene context are rebuilt dynamically during each
 
 Manages the rehearsal conversation and conversation history.
 
+### `core/rehearsal.py`
+
+Owns the active rehearsal's script identity, parsed dialogue, selected actor,
+cursor, transcript, prompt state, and transient error. Starting a new rehearsal
+creates a fresh session, while restarting preserves the script and actor identity
+and resets rehearsal-specific state to the actor's first cue.
+
 ### `core/script_parser.py`
 
 Parses uploaded screenplay text into structured character dialogue.
@@ -76,7 +84,7 @@ A frequency heuristic is then used to determine which detected characters appear
 
 ### Why Separate UI and Logic?
 
-The application intentionally keeps Streamlit-specific UI code in `app.py` while placing screenplay parsing, prompting, API communication, and conversation management inside separate modules.
+The application intentionally keeps Streamlit-specific UI code in `app.py` while placing screenplay parsing, rehearsal state, prompting, API communication, and conversation management inside separate modules.
 
 This keeps the core behavior independent from the interface and makes individual parts of the application easier to reason about and test.
 
